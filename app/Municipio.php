@@ -8,9 +8,9 @@ class Municipio extends Model
 {
     //
 
-    public function users()
+    public function user()
     {
         return $this
-                ->hasMany(User::class, 'municipio_id');
+                ->belongsTo(User::class, 'municipio_id');
     }
 }

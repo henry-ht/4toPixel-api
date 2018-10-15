@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Departamento extends Model
 {
     
-    public function users()
+    public function user()
     {
         return $this
-                ->hasMany(User::class, 'departamento_id');
+                ->belongsTo(User::class, 'departamento_id');
     }
 }

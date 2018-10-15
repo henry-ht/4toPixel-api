@@ -30,18 +30,18 @@ class User extends Authenticatable
     public function departamento()
     {
         return $this
-                ->belongsTo(Departamento::class, 'id');
+                ->hasOne(Departamento::class, 'id', 'departamento_id');
     }
 
     public function municipio()
     {
         return $this
-                ->belongsTo(Municipio::class, 'id');
+                ->hasOne(Municipio::class, 'id', 'municipio_id');
     }
 
     public function typeIdentification()
     {
         return $this
-                ->belongsTo(TypeIdentification::class, 'id');
+                ->hasOne(TypeIdentification::class, 'id', 'type_identification_id');
     }
 }

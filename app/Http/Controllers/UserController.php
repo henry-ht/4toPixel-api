@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\User;
 use App\Departamento;
+use App\Municipio;
+use App\TypeIdentification;
 use Validator;
 
 class UserController extends Controller
@@ -14,7 +16,7 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(User $user)
+    public function index()
     {
         
         $msj = '';
@@ -22,22 +24,26 @@ class UserController extends Controller
         $tipo = '';
         $respuesta = false;
 
-        $usuarios = $user
-                        ->with('departamento')
-                        ->with('municipio')
-                        ->with('typeIdentification')
-                        ->get();
+        $departamentos = Departamento::get();
+        $municipio = Municipio::get();
+        $typeIdentification = TypeIdentification::get();
+        $usuarios = User::with(['departamento', 'municipio', 'typeIdentification'])->get();
 
-        if (!empty($usuarios)) {
-            $msj = '';
+        if (!empty($usuarios) && !empty($departamentos) && !empty($municipio) && !empty($typeIdentification)) {
+            $msj = 'Lista de usuarios registrados';
             $notificar = false;
-            $tipo = 'Lista de usuarios registrados';
-            $respuesta = $usuarios;
+            $tipo = 'success';
+            $respuesta = [
+              'usuarios' => $usuarios,
+              'departamentos' => $departamentos,
+              'municipios' => $municipio,
+              'tipos_identificacion' => $typeIdentification
+            ];
             
         }else{
             $msj = 'Algo no está bien, intente de nuevo';
             $notificar = false;
-            $tipo = 'error';
+            $tipo = 'warning';
             $respuesta = false;
         }
 
@@ -59,7 +65,62 @@ class UserController extends Controller
      */
     public function store(Request $request, User $user)
     {
-        //
+        $msj = '';
+        $notificar = false;
+        $tipo = '';
+        $respuesta = false;
+
+        $validacion = Validator::make($request->all(),[
+            'email' => 'max:50|unique:users', 
+            'name' => 'required|max:30', 
+            'second_name' => 'max:30', 
+            'surname' => 'required|max:30', 
+            'second_surname' => 'max:30', 
+            'type_identification_id' => 'required|max:2|integer', 
+            'identification' => 'required|max:30|unique:users', 
+            'address' => 'required|max:125', 
+            'phone_number' => 'max:12|unique:users', 
+            'ocupation' => 'max:100', 
+            'departamento_id' => 'max:2', 
+            'municipio_id' => 'max:2', 
+            'password' => 'max:20',
+        ]);
+
+        if (!$validacion->fails()) {
+          $credenciales = $request->all();
+          $credenciales['created_at'] = date('Y-m-d H:i:s');
+          $credenciales['updated_at'] = date('Y-m-d H:i:s');
+          // $credenciales['password'] = bcrypt($credenciales['password']);
+
+          
+          $okInsert = $user->insert($credenciales);
+
+          if ($okInsert) {
+            $msj = 'Gracias por registrase en nuestra plataforma';
+            $notificar = true;
+            $tipo = 'success';
+            $respuesta = $credenciales;
+          }else{
+            $msj = 'Realice la acción nuevamente';
+            $notificar = true;
+            $tipo = 'info';
+            $respuesta = false;
+          }
+          
+        }else{
+          $msj = $validacion->messages();
+          $notificar = true;
+          $tipo = 'error';
+          $respuesta = false;
+          
+        }
+
+        return response([
+              'respuesta' => $respuesta,
+              'tipo' => $tipo,
+              'mensaje' => $msj,
+              'notificar' => $notificar
+        ],200);
     }
 
     /**
@@ -106,10 +167,8 @@ class UserController extends Controller
         if (!$validacion->fails()) {
             $credenciales = $request->all();
             if (!empty($credenciales['password'])) $credenciales['password'] = bcrypt($credenciales['password']);
-            $credenciales['id'] = $user->first()->id;
-  
-            $UserModel = new User();
-            $okInsert = $UserModel->where('id', $user->first()->id)->update($credenciales);
+            
+            $okInsert = User::find($user->first()->id)->fill($credenciales)->save();
 
             if ($okInsert) {
                 $msj = 'Datos actualizados';
@@ -156,14 +215,14 @@ class UserController extends Controller
         $okDelete = $UserModel->where('id', $user->first()->id)->delete();
 
         if ($okDelete) {
-            $msj = 'ok';
+            $msj = 'El usuario fue eliminado';
             $notificar = true;
             $tipo = 'success';
             $respuesta = true;
         }else{
-            $msj = 'nada';
+            $msj = 'Algo no salió bien, intente de nuevo';
             $notificar = true;
-            $tipo = 'error';
+            $tipo = 'warning';
             $respuesta = false;
         }
 

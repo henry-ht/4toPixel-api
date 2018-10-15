@@ -8,9 +8,9 @@ class TypeIdentification extends Model
 {
     //
 
-    public function users()
+    public function user()
     {
         return $this
-                ->hasMany(User::class, 'type_identification_id');
+                ->belongsTo(User::class, 'type_identification_id');
     }
 }

@@ -19,12 +19,12 @@ $factory->define(App\User::class, function (Faker $faker) {
         'second_name' => $faker->firstName($gender = null|'male'|'female'),
         'surname' => $faker->firstName($gender = null|'male'|'female'),
         'second_surname' => $faker->lastName ,
-        'phone_number' => $faker->tollFreePhoneNumber,
+        'phone_number' => $faker->bankRoutingNumber,
         'address' => $faker->address,
-        'identification' => $faker->bankAccountNumber,
+        'identification' => $faker->randomNumber($nbDigits = NULL, $strict = false) ,
         'ocupation' => $faker->realText($maxNbChars = 100, $indexSize = 2),
         'email' => $faker->unique()->safeEmail,
-        'password' => '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', // secret
+        // 'password' => '$2y$10$TKh8H1.PfQx37YgCzwiKb.KjNyWgaHb9cbcoQgdIVFlYg7B77UdFm', // secret
         'type_identification_id' => random_int(1, 6),
         'municipio_id' => random_int(1, 2),
         'departamento_id' => random_int(1, 2),
