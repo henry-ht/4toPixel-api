@@ -8,6 +8,7 @@ use App\Departamento;
 use App\Municipio;
 use App\TypeIdentification;
 use Validator;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -71,19 +72,19 @@ class UserController extends Controller
         $respuesta = false;
 
         $validacion = Validator::make($request->all(),[
-            'email' => 'max:50|unique:users', 
+            'email' => 'max:50|unique:users|email', 
             'name' => 'required|max:30', 
             'second_name' => 'max:30', 
             'surname' => 'required|max:30', 
             'second_surname' => 'max:30', 
-            'type_identification_id' => 'required|max:2|integer', 
+            'type_identification_id' => 'required|integer', 
             'identification' => 'required|max:30|unique:users', 
             'address' => 'required|max:125', 
             'phone_number' => 'max:12|unique:users', 
             'ocupation' => 'max:100', 
-            'departamento_id' => 'max:2', 
-            'municipio_id' => 'max:2', 
-            'password' => 'max:20',
+            'departamento_id' => 'integer', 
+            'municipio_id' => 'integer', 
+            // 'password' => 'max:20',
         ]);
 
         if (!$validacion->fails()) {
@@ -92,7 +93,6 @@ class UserController extends Controller
           $credenciales['updated_at'] = date('Y-m-d H:i:s');
           // $credenciales['password'] = bcrypt($credenciales['password']);
 
-          
           $okInsert = $user->insert($credenciales);
 
           if ($okInsert) {
@@ -129,9 +129,26 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(User $user)
+    public function show($id, User $user)
     {
-        //
+        $msj = '';
+        $notificar = false;
+        $tipo = '';
+        $respuesta = false;
+
+        $usuario = $user->with(['departamento', 'municipio', 'typeIdentification'])->where('id', $id)->get();
+
+            $msj = 'usuario';
+            $notificar = true;
+            $tipo = 'success';
+            $respuesta = $usuario;
+            
+        return response([
+              'respuesta' => $respuesta,
+              'tipo' => $tipo,
+              'mensaje' => $msj,
+              'notificar' => $notificar
+        ],200);
     }
 
     /**
@@ -141,52 +158,65 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, User $user)
+    public function update(Request $request, $id, User $user)
     {
         $msj = '';
         $notificar = false;
         $tipo = '';
         $respuesta = false;
+        $credenciales = $request->except(['type_identification', 'municipio', 'departamento', 'created_at', 'updated_at']);
 
-        $validacion = Validator::make($request->all(),[
-            'email' => 'max:50|unique:users', 
+        $validacion = Validator::make($credenciales,[
+            'email' => 'email|max:50|unique:users,id,'.$id, 
             'name' => 'max:30', 
             'second_name' => 'max:30', 
             'surname' => 'max:30', 
             'second_surname' => 'max:30', 
-            'type_identification_id' => 'max:2|integer', 
-            'identification' => 'max:30|unique:users', 
+            'type_identification_id' => 'integer', 
+            'identification' => 'numeric|digits_between:6,10|unique:users,id,'.$id, 
             'address' => 'max:125', 
-            'phone_number' => 'max:12|unique:users', 
+            'phone_number' => 'numeric|digits_between:6,12|unique:users,id,'.$id,
             'ocupation' => 'max:100', 
-            'departamento_id' => 'max:2', 
-            'municipio_id' => 'max:2', 
-            'password' => 'max:20',
+            'departamento_id' => 'integer', 
+            'municipio_id' => 'integer'
         ]);
 
         if (!$validacion->fails()) {
-            $credenciales = $request->all();
-            if (!empty($credenciales['password'])) $credenciales['password'] = bcrypt($credenciales['password']);
-            
-            $okInsert = User::find($user->first()->id)->fill($credenciales)->save();
-
-            if ($okInsert) {
-                $msj = 'Datos actualizados';
-                $notificar = true;
-                $tipo = 'success';
-                $respuesta = $user->first();
-            }else{
-                $msj = 'No existen nuevos datos';
-                $notificar = true;
-                $tipo = 'info';
-                $respuesta = false;
+          $userUp = User::where('id', '=', $id)->first();
+          foreach ($credenciales as $key => $value) {
+            if ($userUp[$key] === $credenciales[$key]) {
+              unset($credenciales[$key]);
             }
+          }
+
+          if (!empty($credenciales)) {
+              $okInsert = User::where('id', '=', $id)->update($credenciales);
+              // $okInsert = User::find($id)->fill($credenciales)->save();
+
+              if ($okInsert) {
+                  $msj = 'Datos actualizados';
+                  $notificar = true;
+                  $tipo = 'success';
+                  $respuesta = $user->with(['departamento', 'municipio', 'typeIdentification'])->first();
+              }else{
+                  $msj = 'No existen nuevos datos';
+                  $notificar = true;
+                  $tipo = 'info';
+                  $respuesta = false;
+              }
+          }else{
+            $msj = 'No existen nuevos datos';
+            $notificar = true;
+            $tipo = 'info';
+            $respuesta = false;
+          }
+            
             
         }else{
-            $msj = 'Ingrese los datos correctamente';
+            $msj = $validacion->messages();
             $notificar = true;
             $tipo = 'error';
-            $respuesta = $validacion->messages();
+            $respuesta = false;
             
         }
 
@@ -211,8 +241,7 @@ class UserController extends Controller
         $tipo = '';
         $respuesta = false;
 
-        $UserModel = new User();
-        $okDelete = $UserModel->where('id', $user->first()->id)->delete();
+        $okDelete = User::where('id', $user->first()->id)->delete();
 
         if ($okDelete) {
             $msj = 'El usuario fue eliminado';

@@ -22,7 +22,7 @@ class CreateUsersTable extends Migration
             $table->integer('type_identification_id')->unsigned();
             $table->integer('identification')->unique();
             $table->string('address', 125);
-            $table->integer('phone_number')->unique()->nullable();
+            $table->bigInteger('phone_number')->unique()->nullable();
             $table->string('email', 50)->nullable()->unique();
             $table->string('ocupation', 100)->nullable();
             // $table->string('password')->nullable();
@@ -43,8 +43,8 @@ class CreateUsersTable extends Migration
             $table->timestamps();
 
         });
-        DB::statement('ALTER TABLE users MODIFY COLUMN identification INT(30)');
-        DB::statement('ALTER TABLE users MODIFY COLUMN phone_number INT(12)');
+        // DB::statement('ALTER TABLE users MODIFY COLUMN identification BIGINT(30)');
+        // DB::statement('ALTER TABLE users MODIFY COLUMN phone_number BIGINT(12)');
     }
 
     /**
